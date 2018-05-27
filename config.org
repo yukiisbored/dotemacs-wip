@@ -1,0 +1,496 @@
+#+TITLE: Yuki's Emacs Configuration
+
+Welcome to my personal Emacs configuration. You may not like it but this one is
+mine.
+
+I'm organizing the various bits and pieces with "stages". A stage doesn't mean
+execution order but rather the stages we're going to build on top of. I'm
+experimenting with this method of organization so be aware.
+
+Unlike most Emacs configuration with literate programming. I use org-mode only
+for organizing purposes not commentary or literacy.
+
+* Notes about personal preferences
+
+  There are a couple of things that I'm always going to be strict with this
+  since this is *my* configuration. If you want to use some parts of it, just
+  take it.
+
+  The purpose of this note is to really just point out what are my preferences
+  so you can know what stuff you can take away from this +junk+ beautiful
+  configuration.
+
+  Here are a few things that I like to point out:
+
+  - I don't use org for TODOs
+    - Weird? Yes. Personally, I prefer the analog way to do TODOs because of the
+      amount of candy eye I can do with it. At the moment, I have a big
+      whiteboard behind me with sticky notes pasted all over it and some
+      +terrible+ drawings to decorate them.
+  - I use org for almost everything document related
+    - Org is an extremely powerful markup language where the sky is the limit. I
+      find it better than any other alternatives (most notably R-Markdown).
+      Thanks to the power of Emacs, I can use it for everything from blog posts
+      to journals to work school.
+  - I use multiple Unix-like operating systems
+    - There may be some weird hacks in this configuration. I specifically
+      targeting support for GNU/Linux, OpenBSD, DragonFlyBSD, and FreeBSD.
+      Windows support is not guaranteed.
+  - I don't use Emacs for everything
+    - Shocking news? Yes, Emacs is unbelievably powerful but I don't use it for
+      everything. One of which is terminal emulation since ansi-term and term
+      sucks. I don't use it much for emails due to horrible multiple account
+      support which I need.
+  - And possible more ...
+    - What do you expect? I don't have the bloody time to write everything. I'll
+      add some more in the future.
+
+* Stage 0: Basic environment setup
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 0: Basic environment setup")
+  #+END_SRC
+
+** Bootstrap =use-package=
+
+   #+BEGIN_SRC emacs-lisp
+     (unless (package-installed-p 'use-package)
+       (package-refresh-contents)
+       (package-install 'use-package))
+
+     (setq use-package-verbose t)
+     (setq use-package-always-ensure t)
+
+     (require 'use-package)
+   #+END_SRC
+
+** Compile everything
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package auto-compile
+       :config (auto-compile-on-load-mode))
+   #+END_SRC
+
+** Sensible defaults
+
+   #+BEGIN_SRC emacs-lisp
+     (load-file "~/.emacs.d/sensible-defaults.el/sensible-defaults.el")
+     (sensible-defaults/use-all-settings)
+     (sensible-defaults/use-all-keybindings)
+     (sensible-defaults/backup-to-temp-directory)
+   #+END_SRC
+
+* Stage 1: Foundation
+
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 1: Foundation")
+  #+END_SRC
+
+** Generic completion front-end
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package ivy
+       :bind
+       ("C-c C-r" . ivy-resume)
+       :config
+       (setq ivy-use-virtual-buffers t
+             enable-recursive-minibuffers t)
+       (add-hook 'after-init-hook 'ivy-mode))
+   #+END_SRC
+
+*** Better Search
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package swiper
+        :bind ("C-s" . swiper))
+    #+END_SRC
+
+*** Replace Emacs commands with Ivy substitute
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package counsel
+        :bind
+        ("M-x" . counsel-M-x)
+        ("C-x C-f" . counsel-find-file)
+        ("<f1> f" . counsel-describe-function)
+        ("<f2> v" . counsel-describe-variable)
+        ("<f1> l" . counsel-find-library)
+        ("<f1> i" . counsel-info-lookup-symbol)
+        ("<f2> u" . counsel-unicode-char)
+        :config (define-key read-expression-map
+                  (kbd "C-r") 'counsel-expression-history))
+    #+END_SRC
+
+** Modular in-buffer completion framework
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package company
+       :config (add-hook 'after-init-hook
+                         'global-company-mode))
+   #+END_SRC
+
+*** Documentation popup for Company
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package company-quickhelp
+        :config (add-hook 'after-init-hook 'company-quickhelp-mode))
+    #+END_SRC
+
+** Modern on-the-fly syntax checking extension
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package flycheck
+       :config
+       (add-hook 'after-init-hook
+                 'global-flycheck-mode)
+       (setq-default flycheck-disabled-checkers
+                     '(emacs-lisp-checkdoc)))
+   #+END_SRC
+
+** Code templating system
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package yasnippet
+       :config
+       (use-package yasnippet-snippets)
+       (add-hook 'after-init-hook 'yas-global-mode))
+   #+END_SRC
+
+** Project interaction library
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package projectile
+       :config (add-hook 'after-init-hook 'projectile-mode))
+   #+END_SRC
+
+** Automatically update Emacs packages
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package auto-package-update
+       :config (add-hook 'after-init-hook 'auto-package-update-maybe))
+   #+END_SRC
+* Stage 2: Environment preferences
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 2: Environment preferences")
+  #+END_SRC
+
+** Distraction free
+
+   #+BEGIN_SRC emacs-lisp
+     (tool-bar-mode 0)
+     (menu-bar-mode 0)
+
+     (when window-system
+       (scroll-bar-mode -1))
+
+     (defun yuki/disable-scroll-bars (frame)
+       (modify-frame-parameters frame
+                                '((vertical-scroll-bars . nil)
+                                  (horizontal-scroll-bars . nil))))
+
+     (add-hook 'after-make-frame-functions 'yuki/disable-scroll-bars)
+   #+END_SRC
+
+** Visual aid
+
+   #+BEGIN_SRC emacs-lisp
+     (defun yuki/visual-aid ()
+       (global-hl-line-mode 1)
+       (column-number-mode 1))
+
+     (add-hook 'after-init-hook 'yuki/visual-aid)
+   #+END_SRC
+
+** Automatic golden ratio layout
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package zoom
+       :init (setq zoom-size '(0.618 . 0.618))
+       :config (add-hook 'after-init-hook 'zoom-mode))
+   #+END_SRC
+
+** Easier pane management
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package switch-window
+       :bind
+       ("C-x o" . switch-window)
+       ("C-x 1" . switch-window-then-maximize)
+       ("C-x 2" . switch-window-then-split-below)
+       ("C-x 3" . switch-window-then-split-right)
+       ("C-x 0" . switch-window-then-delete)
+       :init
+       (setq switch-window-shortcut-style 'qwerty)
+       (setq switch-window-qwerty-shortcuts
+             '("a" "s" "d" "f" "j" "k" "l" ";" "w" "e" "i" "o"))
+       (setq switch-window-minibuffer-shortcut ?z))
+   #+END_SRC
+
+** Shortcut helper
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package which-key
+       :config
+       (defun yuki/which-key-setup ()
+         (which-key-setup-minibuffer)
+         (which-key-mode 1))
+       (add-hook 'after-init-hook 'yuki/which-key-setup))
+   #+END_SRC
+
+** Better pop-up menu
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package ace-popup-menu
+       :config (add-hook 'after-init-hook 'ace-popup-menu-mode))
+   #+END_SRC
+
+** Tag and filtering capabilities for =list-packages=
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package list-packages-ext
+       :config (add-hook 'package-menu-mode-hook 'list-packages-ext-mode))
+   #+END_SRC
+
+* Stage 3: Candy eye
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 3: Candy eye")
+  #+END_SRC
+
+** Emoji support
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package emojify
+       :config (add-hook 'after-init-hook
+                         'global-emojify-mode))
+   #+END_SRC
+
+** Nyanyanyanyanya~
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package nyan-mode
+       :init
+       (setq nyan-animate-nyancat t
+             nyan-wavy-trail t)
+       :config (add-hook 'after-init-hook 'nyan-mode))
+   #+END_SRC
+
+* Stage 4: Editor environment preferences
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 4: Editor environment preferences")
+  #+END_SRC
+
+** Visualize regex search-replace
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package visual-regexp
+       :bind
+       ("C-c r" . vr/replace)
+       ("C-c q" . vr/query-replace))
+   #+END_SRC
+
+** Silver searcher
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package ag
+       :bind ("C-c k" . counsel-ag))
+   #+END_SRC
+
+** Jump to definition
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package dumb-jump
+       :bind
+       ("M-g o" . dumb-jump-go-other-window)
+       ("M-g j" . dumb-jump-go)
+       ("M-g i" . dumb-jump-go-prompt)
+       ("M-g x" . dumb-jump-go-prefer-external)
+       ("M-g z" . dumb-jump-go-prefer-external-other-window)
+       :config
+       (setq dumb-jump-selector 'ivy))
+   #+END_SRC
+
+** Automatic whitespace cleanup
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package whitespace-cleanup-mode
+       :config (add-hook 'after-init-hook
+                         'global-whitespace-cleanup-mode))
+   #+END_SRC
+
+** Good Git integration (Suck it vi!)
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package magit)
+   #+END_SRC
+
+* Stage 5: Programming environment preferences
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 5: Programming environment preferences")
+  #+END_SRC
+
+** TABs are evil
+
+   #+BEGIN_SRC emacs-lisp
+     (setq-default indent-tabs-mode nil)
+   #+END_SRC
+
+** Lisp
+
+*** Almost feature complete generic Lisp environment
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package parinfer
+        :bind ("C-," . parinfer-toggle-mode)
+        :init
+        (progn
+          (setq parinfer-extensions
+                '(defaults
+                   pretty-parents
+                   paredit
+                   smart-tab
+                   smart-yank))
+          (add-hook 'clojure-mode-hook #'parinfer-mode)
+          (add-hook 'emacs-lisp-mode-hook #'parinfer-mode)
+          (add-hook 'common-lisp-mode-hook #'parinfer-mode)
+          (add-hook 'scheme-mode-hook #'parinfer-mode)
+          (add-hook 'lisp-mode-hook #'parinfer-mode)))
+    #+END_SRC
+
+*** Stuff for Emacs Lisp
+
+**** Highlight defined symbols
+
+     #+BEGIN_SRC emacs-lisp
+       (use-package highlight-defined
+         :config (add-hook 'emacs-lisp-mode-hook
+                           'highlight-defined-mode))
+     #+END_SRC
+
+** Hashicorp
+
+*** Mode for Hashicorp language
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package hcl-mode)
+   #+END_SRC
+
+** Python
+
+*** IDE junkies for Python
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package jedi
+        :config (add-hook 'python-mode 'jedi:setup))
+    #+END_SRC
+
+*** Company completion
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package company-jedi
+        :config
+        (defun yuki/add-jedi-company-backend
+            (add-to-list 'company-backends 'company-jedi))
+        (add-hook 'python-mode-hook 'yuki/add-jedi-company-backend))
+    #+END_SRC
+
+*** Virtual Environment awareness
+
+    #+BEGIN_SRC emacs-lisp
+      (use-package auto-virtualenvwrapper
+        :config (add-hook 'python-mode-hook
+                          'auto-virtualenvwrapper-activate))
+    #+END_SRC
+
+** YAML
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package yaml-mode
+       :config
+       (add-to-list 'auto-mode-alist
+                    '("\\.ya?ml" . yaml-mode)))
+   #+END_SRC
+
+** \LaTeX
+
+   #+BEGIN_SRC emacs-lisp
+     (setq latex-run-command "lualatex")
+   #+END_SRC
+
+** Dockerfile
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package dockerfile-mode)
+   #+END_SRC
+
+** Jinja2
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package jinja2-mode)
+   #+END_SRC
+* Stage 6: Org Extravaganza
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 6: Org Extravaganza")
+  #+END_SRC
+
+** Exporting configuration
+
+*** HTML
+
+    #+BEGIN_SRC emacs-lisp
+      (setq org-html-postamble nil)
+    #+END_SRC
+
+*** PDF
+
+    #+BEGIN_SRC emacs-lisp
+      (setq org-latex-pdf-process
+            '("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+              "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+              "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+
+      (add-to-list 'org-latex-packages-alist '("" "minted"))
+      (setq org-latex-listings 'minted)
+    #+END_SRC
+
+** Enable more exporters
+
+   #+BEGIN_SRC emacs-lisp
+     (require 'ox-beamer)
+     (require 'ox-md)
+     (require 'ox-html)
+   #+END_SRC
+
+** Pretty highlighting on code
+
+   #+BEGIN_SRC emacs-lisp
+     (setq org-src-fontify-natively t)
+   #+END_SRC
+
+** Enable Alphabetical list
+
+   #+BEGIN_SRC emacs-lisp
+     (setq org-list-allow-alphabetical t)
+   #+END_SRC
+
+** Make Tabulation act natively in code blocks
+
+   #+BEGIN_SRC emacs-lisp
+     (setq org-src-tab-acts-natively t)
+   #+END_SRC
+* Stage 7: Finalization
+
+  #+BEGIN_SRC emacs-lisp
+    (message ">> Stage 7: Finalization")
+  #+END_SRC
+
+** Start Emacs server
+
+   #+BEGIN_SRC emacs-lisp
+     (server-start)
+   #+END_SRC
